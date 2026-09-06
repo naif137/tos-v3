@@ -3,7 +3,7 @@ import pandas as pd
 import datetime
 import yfinance as yf
 
-st.set_page_config(page_title="TOS V3 - Trading Operating System & Academy", layout="wide", page_icon="📈")
+st.set_page_config(page_title="TOS V3 - Smart Trading Operating System", layout="wide", page_icon="📈")
 
 # --- الإعدادات الجانبية (اللغة والسوق) ---
 st.sidebar.header("⚙️ Settings | الإعدادات")
@@ -17,26 +17,27 @@ default_ticker = "2222.SR" if is_saudi else "AAPL"
 
 # --- القاموس (عربي/إنجليزي) ---
 t = {
-    "title": "🚀 TOS V3: Professional Trading System & Pro Roadmap" if lang == "English" else "🚀 نظام TOS V3 الاحترافي ومسار المحترف التدريبي",
-    "subtitle": "From Zero to Professional Trader: Risk, Live Data, Journal & Master Roadmap" if lang == "English" else "من الصفر إلى الاحتراف: إدارة المخاطر، البيانات الحية، السجل ومسار التدريب",
+    "title": "🚀 TOS V3: AI-Powered Smart Trading System" if lang == "English" else "🚀 نظام TOS V3 الذكي والمطوّر للتداول",
+    "subtitle": "Advanced Risk Engine, Smart AI Health Check & Pro Psychology Tracking" if lang == "English" else "محرك المخاطر المتقدم، الفحص الذكي للصحة وتتبع علم النفس الاحترافي",
     "account_settings": "📊 Account Settings" if lang == "English" else "📊 إعدادات الحساب",
     "capital": "Starting Capital" if lang == "English" else "رأس المال الأساسي",
     "risk_pct": "Risk Per Trade (%)" if lang == "English" else "نسبة المخاطرة لكل صفقة (%)",
-    "risk_terminal": "🎯 1. Live Market Risk Terminal" if lang == "English" else "🎯 1. محطة المخاطر والبيانات الحية للسوق",
+    "risk_terminal": "🎯 1. AI Smart Risk Terminal" if lang == "English" else "🎯 1. محطة المخاطر والتقييم الذكي للصفقة",
     "asset": "Asset / Ticker" if lang == "English" else "الرمز / السهم",
     "live_price": "Live Market Price" if lang == "English" else "السعر الحي بالسوق",
     "entry": "Planned Entry" if lang == "English" else "سعر الدخول المستهدف",
     "sl": "Stop Loss" if lang == "English" else "وقف الخسارة",
     "tp1": "Take Profit 1 (TP1)" if lang == "English" else "هدف أول (TP1)",
     "tp2": "Take Profit 2 (TP2)" if lang == "English" else "هدف ثاني (TP2)",
-    "risk_analysis": "### Risk & Targets Analysis" if lang == "English" else "### تحليل المخاطر والأهداف",
+    "risk_analysis": "### Risk & AI Health Check" if lang == "English" else "### تحليل المخاطر والفحص الذكي",
     "rr1": "R:R (TP1)" if lang == "English" else "العائد للمخاطرة (TP1)",
     "rr2": "R:R (TP2)" if lang == "English" else "العائد للمخاطرة (TP2)",
     "pos_size": "Required Position Size" if lang == "English" else "حجم المركز المطلوب",
     "hard_stop": "🚨 HARD STOP: Poor R:R ratio (< 1.5), Trade Rejected!" if lang == "English" else "🚨 توقف إجباري: نسبة العائد للمخاطرة ضعيفة (< 1.5)، الصفقة مرفوضة!",
     "approved": "🟢 APPROVED: Trade meets risk parameters!" if lang == "English" else "🟢 مسموح: الصفقة تتوافق مع معايير المخاطرة!",
-    "roadmap_title": "🎓 Pro Trader Roadmap & Mentorship | مسار الاحتراف والتدريب المتكامل",
-    "journal_title": "📓 Active Trades & Multi-Target Journal",
+    "ai_insights": "🤖 AI Trade Intelligence Insights" if lang == "English" else "🤖 رؤى الذكاء الاصطناعي وصحة الصفقة",
+    "roadmap_title": "🎓 Pro Trader Roadmap & Mentorship",
+    "journal_title": "📓 Smart Active Trades & Psychology Dashboard",
     "backtest_title": "🧪 Backtesting & Training Simulator"
 }
 
@@ -48,6 +49,7 @@ if lang == "عربي":
         h1, h2, h3 { color: #00d296; }
         .stButton>button { background-color: #2d5aid; color: white; border-radius: 5px; width: 100%; }
         .roadmap-box { background-color: #1f242d; padding: 20px; border-radius: 10px; border-left: 5px solid #00d296; margin-bottom: 15px; }
+        .ai-box { background-color: #1e293b; padding: 15px; border-radius: 8px; border: 1px solid #38bdf8; margin-top: 10px; }
         </style>""", unsafe_allow_html=True)
 else:
     st.markdown("""<style>
@@ -55,6 +57,7 @@ else:
         h1, h2, h3 { color: #00d296; }
         .stButton>button { background-color: #2d5aid; color: white; border-radius: 5px; width: 100%; }
         .roadmap-box { background-color: #1f242d; padding: 20px; border-radius: 10px; border-left: 5px solid #00d296; margin-bottom: 15px; }
+        .ai-box { background-color: #1e293b; padding: 15px; border-radius: 8px; border: 1px solid #38bdf8; margin-top: 10px; }
         </style>""", unsafe_allow_html=True)
 
 # --- واجهة التطبيق الرئيسية ---
@@ -66,83 +69,18 @@ st.sidebar.header(t["account_settings"])
 capital = st.sidebar.number_input(f'{t["capital"]} ({currency})', value=100000.0, step=1000.0)
 risk_pct = st.sidebar.slider(t["risk_pct"], min_value=0.1, max_value=5.0, value=0.5) / 100.0
 
-# --- قسم مسار الاحتراف والتدريب (Pro Roadmap) ---
-st.markdown(f"--- \n ## {t['roadmap_title']}")
-
-roadmap_tab1, roadmap_tab2, roadmap_tab3, roadmap_tab4 = st.tabs([
-    "📍 المرحلة 1: إدارة المخاطر", 
-    "📈 المرحلة 2: الهيكل الفني", 
-    "🧠 المرحلة 3: الانضباط النفسي", 
-    "🧪 المرحلة 4: اختبار الأفضلية (Backtest)"
-])
-
-with roadmap_tab1:
+# --- مسار الاحتراف (مختصر ونظيف) ---
+with st.expander("🎓 عرض مسار المحترف وقواعد التداول السليمة (Pro Roadmap)", expanded=False):
     st.markdown("""
-    <div class="roadmap-box">
-        <h3>المرحلة الأولى: حماية رأس المال وإدارة المخاطر (The Foundation)</h3>
-        <p>المتداول الهاوي يبحث عن كم يربح، أما المتداول المحترف فيبحث عن <b>كم يمكن أن يخسر</b>.</p>
-        <ul>
-            <li><b>القاعدة الذهبية:</b> لا تخاطر بأكثر من 0.5% إلى 1% من إجمالي رأس مالك في أي صفقة منفردة.</li>
-            <li><b>التحقق الآلي:</b> تم برمجة محطة المخاطر أدناه لرفض أي صفقة تقل نسبة العائد للمخاطرة (R:R) فيها عن 1.5.</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-with roadmap_tab2:
-    st.markdown("""
-    <div class="roadmap-box">
-        <h3>المرحلة الثانية: قراءة السوق وهندسة الدخول (Technical Setup)</h3>
-        <p>التداول ليس عشوائياً، يجب أن يعتمد دخولك على تحليل هيكل السوق (Market Structure):</p>
-        <ul>
-            <li><b>التحديد:</b> تداول مع اتجاه السلّم العام (الترند الصاعد في السوق السعودي أو الأمريكي).</li>
-            <li><b>المناطق:</b> حدد مناطق الارتداد التاريخية (الدعوم القوية أو مستويات السيولة).</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-with roadmap_tab3:
-    st.markdown("""
-    <div class="roadmap-box">
-        <h3>المرحلة الثالثة: ترويض النفسية والسيطرة على المشاعر (Trading Psychology)</h3>
-        <p>العدو الأول للمتداول ليس السوق، بل <b>نفسه</b>:</p>
-        <ul>
-            <li><b>FOMO (ملاحقة السعر):</b> إذا طار السهم، اترك الفرصة ولا تطارده أبداً.</li>
-            <li><b>Revenge Trading (الانتقام):</b> بعد صفقة خاسرة، أغلق المنصة فوراً ولا تحاول استرجاع الخسارة بنفس الجلسة.</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-with roadmap_tab4:
-    st.markdown("""
-    <div class="roadmap-box">
-        <h3>المرحلة الرابعة: إثبات الأفضلية الإحصائية (Statistical Expectancy)</h3>
-        <p>لكي تصبح محترفاً، يجب أن تثبت أن استراتيجيتك تحقق ربحاً تراكمياً عبر قانون التوقع الإحصائي (Expectancy).</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # محاكي الباك تست المدمج في المرحلة الرابعة
-    bt_c1, bt_c2, bt_c3 = st.columns(3)
-    with bt_c1:
-        bt_trades = st.number_input("عدد الصفقات التجريبية", value=30, min_value=1)
-    with bt_c2:
-        bt_winrate = st.slider("نسبة النجاح (%)", min_value=10.0, max_value=90.0, value=55.0) / 100.0
-    with bt_c3:
-        bt_avg_rr = st.number_input("متوسط العائد للمخاطرة (R:R)", value=2.0, min_value=0.5)
-
-    if st.button("تقييم اختبار الأفضلية للاستراتيجية"):
-        wins = int(bt_trades * bt_winrate)
-        losses = bt_trades - wins
-        total_r = (wins * bt_avg_rr) - losses
-        expectancy = (bt_winrate * bt_avg_rr) - (1 - bt_winrate)
-        
-        if expectancy > 0:
-            st.success(f"🎉 مبروك! استراتيجيتك ناجحة وإحصائياً ذات أفضلية. التوقع الإحصائي: {expectancy:+.2f} R لكل صفقة، والمحصلة: {total_r:+.2f} R")
-        else:
-            st.error(f"⚠️ تحذير: استراتيجيتك الحالية خاسرة على المدى الطويل (التوقع: {expectancy:+.2f} R). يجب تعديل نسبة النجاح أو العائد للمخاطرة.")
+    * **المرحلة 1:** حماية رأس المال بعدم المخاطرة بأكثر من 0.5%-1% لكل صفقة.
+    * **المرحلة 2:** الالتزام بالدخول بناءً على اتجاه السوق والهيكل الفني.
+    * **المرحلة 3:** ترويض النفسية وتجنب ملاحقة الأسعار (FOMO) والانتقام.
+    * **المرحلة 4:** تفعيل الباك تست وإثبات ربحية الاستراتيجية إحصائياً.
+    """)
 
 st.markdown("---")
 
-# 1. محطة المخاطر الحية
+# 1. محطة المخاطر الذكية
 st.subheader(t["risk_terminal"])
 col1, col2, col3, col4 = st.columns(4)
 
@@ -198,9 +136,26 @@ if rr_ratio1 < 1.5:
 else:
     st.success(t["approved"])
 
+# --- نظام التقييم والفحص الذكي (AI Health Check) ---
+st.markdown(f"### {t['ai_insights']}")
+ai_tips = []
+if price_diff > 0:
+    sl_distance_pct = (abs(planned_entry - stop_loss) / planned_entry) * 100
+    if sl_distance_pct < 1.0:
+        ai_tips.append("⚠️ **تحذير وقف الخسارة:** المسافة لوقف الخسارة ضيقة جداً (<1%) وقد يتم ضربه بالتذبذب الطبيعي للسوق.")
+    if sl_distance_pct > 7.0:
+        ai_tips.append("⚠️ **مسافة الوقف واسعة:** وقف الخسارة بعيد نسبياً، تأكد أن حجم المركز يتناسب مع هذه المخاطرة.")
+    if rr_ratio1 >= 2.5:
+        ai_tips.append("🌟 **أداء ممتاز:** نسبة العائد للمخاطرة للهدف الأول قوية جداً وتفوق 2.5.")
+    if not ai_tips:
+        ai_tips.append("✅ **الحالة العامة سليمة:** معايير الدخول والوقف تتوافق مع القواعد القياسية المعتمدة.")
+
+for tip in ai_tips:
+    st.markdown(f"<div class='ai-box'>{tip}</div>", unsafe_allow_html=True)
+
 st.markdown("---")
 
-# 2 & 3. سجل الصفقات النشطة
+# 2 & 3. سجل الصفقات الذكي وتتبع مؤشر الأداء النفسي
 if "journal_data" not in st.session_state:
     st.session_state.journal_data = pd.DataFrame(columns=[
         "Date", "Asset", "Size", "Entry", "TP1", "TP2", f'P&L ({currency})', "Psychology Status"
@@ -233,3 +188,11 @@ with st.form("trade_form"):
 
 if not st.session_state.journal_data.empty:
     st.dataframe(st.session_state.journal_data, use_container_width=True)
+    
+    # مؤشر الأداء النفسي والالتزام الذكي
+    total_trades_count = len(st.session_state.journal_data)
+    disciplined_count = len(st.session_state.journal_data[st.session_state.journal_data['Psychology Status'].str.contains("Disciplined|منضبط")])
+    discipline_score = (disciplined_count / total_trades_count) * 100 if total_trades_count > 0 else 0
+    
+    st.markdown(f"### 🧠 مؤشر الالتزام الانضباطي النفسي: `{discipline_score:.1f}%`")
+    st.progress(discipline_score / 100.0)
