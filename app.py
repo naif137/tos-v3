@@ -24,6 +24,7 @@ t = {
     "risk_terminal": "🎯 1. Live Market Risk Terminal" if lang == "English" else "🎯 1. محطة المخاطر والبيانات الحية للسوق",
     "asset": "Asset / Ticker" if lang == "English" else "الرمز / السهم",
     "live_price": "Live Market Price" if lang == "English" else "السعر الحي بالسوق",
+    "company_name": "Company" if lang == "English" else "الشركة",
     "entry": "Planned Entry" if lang == "English" else "سعر الدخول المستهدف",
     "sl": "Stop Loss" if lang == "English" else "وقف الخسارة",
     "tp1": "Take Profit 1 (TP1)" if lang == "English" else "هدف أول (TP1)",
@@ -73,21 +74,25 @@ st.sidebar.header(t["account_settings"])
 capital = st.sidebar.number_input(f'{t["capital"]} ({currency})', value=100000.0, step=1000.0)
 risk_pct = st.sidebar.slider(t["risk_pct"], min_value=0.1, max_value=5.0, value=0.5) / 100.0
 
-# 1. محطة المخاطر وجلب السعر الحي
+# 1. محطة المخاطر وجلب اسم الشركة والسعر الحي
 st.subheader(t["risk_terminal"])
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     asset = st.text_input(t["asset"], value=default_ticker)
     
-    # محاولة جلب السعر اللحظي من السوق (أمريكي أو سعودي)
     current_market_price = 180.0
+    comp_name = "N/A"
     try:
         ticker_obj = yf.Ticker(asset)
+        # محاولة جلب اسم الشركة
+        info = ticker_obj.info
+        comp_name = info.get('longName', info.get('shortName', asset))
+        
         todays_data = ticker_obj.history(period="1d")
         if not todays_data.empty:
             current_market_price = float(todays_data['Close'].iloc[-1])
-            st.info(f"{t['live_price']}: {current_market_price:.2f} {currency}")
+            st.success(f"🏢 {comp_name}\n\n💰 {t['live_price']}: {current_market_price:.2f} {currency}")
         else:
             st.warning("⚠️ تعذر جلب السعر اللحظي، يرجى التحقق من الرمز")
     except Exception:
