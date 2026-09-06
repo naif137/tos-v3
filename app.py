@@ -11,8 +11,9 @@ lang = st.sidebar.radio("Language / اللغة", ["عربي", "English"])
 market = st.sidebar.selectbox("Market / السوق" if lang == "English" else "السوق", 
                               ["US Market", "Saudi Market"] if lang == "English" else ["السوق الأمريكي", "السوق السعودي"])
 
-currency = "$" if "US" in market or "الأمريكي" in market else "SAR"
-default_ticker = "AAPL" if "US" in market or "الأمريكي" in market else "2222.SR"
+is_saudi = "Saudi" in market or "السعودي" in market
+currency = "SAR" if is_saudi else "$"
+default_ticker = "2222.SR" if is_saudi else "AAPL"
 
 # --- القاموس (عربي/إنجليزي) ---
 t = {
@@ -22,9 +23,8 @@ t = {
     "capital": "Starting Capital" if lang == "English" else "رأس المال الأساسي",
     "risk_pct": "Risk Per Trade (%)" if lang == "English" else "نسبة المخاطرة لكل صفقة (%)",
     "risk_terminal": "🎯 1. Live Market Risk Terminal" if lang == "English" else "🎯 1. محطة المخاطر والبيانات الحية للسوق",
-    "asset": "Asset / Ticker" if lang == "English" else "الرمز / السهم",
+    "asset": "Asset / Ticker" if lang == "English" else "الرمز / السهم (مثال: 1120 أو 2222)",
     "live_price": "Live Market Price" if lang == "English" else "السعر الحي بالسوق",
-    "company_name": "Company" if lang == "English" else "الشركة",
     "entry": "Planned Entry" if lang == "English" else "سعر الدخول المستهدف",
     "sl": "Stop Loss" if lang == "English" else "وقف الخسارة",
     "tp1": "Take Profit 1 (TP1)" if lang == "English" else "هدف أول (TP1)",
@@ -79,15 +79,19 @@ st.subheader(t["risk_terminal"])
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    asset = st.text_input(t["asset"], value=default_ticker)
+    user_input_asset = st.text_input(t["asset"], value="1120" if is_saudi else "AAPL")
     
+    # المعالجة الذكية للرمز: إذا كان السوق سعودي ولم يكتب المستخدم .SR يضيفها تلقائياً
+    query_asset = user_input_asset.strip()
+    if is_saudi and not query_asset.endswith(".SR") and not query_asset.endswith(".sr"):
+        query_asset = query_asset + ".SR"
+
     current_market_price = 180.0
     comp_name = "N/A"
     try:
-        ticker_obj = yf.Ticker(asset)
-        # محاولة جلب اسم الشركة
+        ticker_obj = yf.Ticker(query_asset)
         info = ticker_obj.info
-        comp_name = info.get('longName', info.get('shortName', asset))
+        comp_name = info.get('longName', info.get('shortName', query_asset))
         
         todays_data = ticker_obj.history(period="1d")
         if not todays_data.empty:
@@ -141,7 +145,7 @@ st.subheader(t["journal_title"])
 with st.form("trade_form"):
     c1, c2, c3, c4 = st.columns(4)
     t_date = c1.date_input(t["date"], datetime.date.today())
-    t_asset = c2.text_input(t["asset"], asset)
+    t_asset = c2.text_input(t["asset"], user_input_asset)
     t_size = c3.number_input(t["actual_size"], value=position_size)
     t_entry = c4.number_input(t["actual_entry"], value=planned_entry)
     
