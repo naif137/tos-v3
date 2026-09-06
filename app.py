@@ -1,217 +1,252 @@
 ﻿import streamlit as st
 import pandas as pd
-import datetime
 import yfinance as yf
 
-st.set_page_config(page_title="TOS V3 - Ultimate Institutional & Algorithmic System", layout="wide", page_icon="📈")
+st.set_page_config(page_title="Institutional Trading & Academy SaaS", layout="wide", page_icon="⚡")
 
-# --- الإعدادات الجانبية (اللغة والسوق) ---
-st.sidebar.header("⚙️ Settings | لوحة التحكم المؤسسية")
-lang = st.sidebar.radio("Language / اللغة", ["عربي", "English"])
-market = st.sidebar.selectbox("Market / السوق" if lang == "English" else "السوق", 
-                              ["US Market", "Saudi Market"] if lang == "English" else ["السوق الأمريكي", "السوق السعودي"])
+# --- التنقل بين أقسام المنصة ---
+st.sidebar.markdown("### 🧭 تنقل بين أقسام المنصة")
+app_mode = st.sidebar.selectbox("اختر الصفحة:", ["⚡ محرك التداول الذكي", "🎓 الأكاديمية الذكية والموجه المؤسسي الشامل"])
 
-is_saudi = "Saudi" in market or "السعودي" in market
-currency = "SAR" if is_saudi else "$"
-default_ticker = "2222.SR" if is_saudi else "AAPL"
+# ==========================================
+# الصفحة الأولى: محرك التداول الذكي
+# ==========================================
+if app_mode == "⚡ محرك التداول الذكي":
 
-# --- القاموس المؤسسي المتكامل ---
-t = {
-    "title": "🚀 TOS V3: Ultimate Algorithmic Trading & Capital Protection Engine" if lang == "English" else "🚀 نظام TOS V3: المحطة الخارقة للخوارزميات وحماية رأس المال القصوى",
-    "subtitle": "Institutional Grade Risk Management, ATR Volatility Stops, Circuit Breakers & Pro Mastery Tracks" if lang == "English" else "إدارة مخاطر مؤسسية، وقفات تذبذب ATR، قواطع أمان للحماية، ومسارات احترافية",
-    "account_settings": "📊 Portfolio Parameters" if lang == "English" else "📊 إعدادات المحفظة ورأس المال",
-    "capital": "Starting Capital" if lang == "English" else "رأس المال الأساسي",
-    "risk_pct": "Max Risk Per Trade (%)" if lang == "English" else "أقصى نسبة مخاطرة لكل صفقة (%)",
-    "max_daily_loss": "Max Daily Drawdown Limit (%)" if lang == "English" else "حد الخسارة اليومية القصوى (Circuit Breaker %)",
-    "terminal_title": "🎯 1. Algorithmic Pre-Trade Risk & ATR Terminal" if lang == "English" else "🎯 1. محطة المخاطر الخوارزمية وحسابات التذبذب (ATR)",
-    "asset": "Asset / Ticker" if lang == "English" else "الرمز / السهم",
-    "live_price": "Live Market Price" if lang == "English" else "السعر الحي بالسوق",
-    "entry": "Planned Entry" if lang == "English" else "سعر الدخول المستهدف",
-    "sl": "Dynamic Stop Loss (ATR Based)" if lang == "English" else "وقف الخسارة الذكي (المبني على التذبذب)",
-    "tp1": "Take Profit 1 (TP1)" if lang == "English" else "هدف أول (TP1)",
-    "tp2": "Take Profit 2 (TP2)" if lang == "English" else "هدف ثاني (TP2)",
-    "metrics_header": "### Quantitative & Volatility Metrics" if lang == "English" else "### المقاييس الكمية ومؤشرات التذبذب",
-    "rr1": "R:R (TP1)" if lang == "English" else "العائد للمخاطرة (TP1)",
-    "rr2": "R:R (TP2)" if lang == "English" else "العائد للمخاطرة (TP2)",
-    "pos_size": "Optimal Position Size" if lang == "English" else "حجم المركز الآمن (أسهم)",
-    "hard_stop": "🚨 CIRCUIT BREAKER / HARD STOP: Trade Rejected by Institutional Rules!" if lang == "English" else "🚨 قاطع الأمان مفعل / وقف إجباري: الصفقة مرفوضة وفقاً لقواعد المؤسسة!",
-    "approved": "🟢 APPROVED: Trade fully compliant with risk parameters!" if lang == "English" else "🟢 معتمد: الصفقة متوافقة تماماً مع معايير الأمان المالي!",
-    "academy_title": "🎓 Pro Mastery Academy & Technical Patterns Track" if lang == "English" else "🎓 أكاديمية المحترف ومسار النماذج الفنية وهيكل السوق",
-    "journal_title": "📓 Algorithmic Trade Journal & Psychological Audit" if lang == "English" else "📓 سجل الصفقات الخوارزمي والتدقيق النفسي واليومي"
-}
+    def calculate_tharp_position_size(capital: float, risk_pct: float, current_price: float, stop_loss_price: float):
+        allowed_risk_cash = capital * (risk_pct / 100.0)
+        risk_per_share = abs(current_price - stop_loss_price)
+        if risk_per_share <= 0:
+            return 0, 0.0, 0.0
+        shares = int(allowed_risk_cash / risk_per_share)
+        total_cost = shares * current_price
+        return shares, allowed_risk_cash, total_cost
 
-# --- التصميم المؤسسي الفاخر ---
-if lang == "عربي":
-    st.markdown("""<style>
-        .main, .stMarkdown, .stText, [data-testid="stSidebar"] { direction: rtl; text-align: right; }
-        .main { background-color: #0b0f19; color: #f1f5f9; }
-        h1, h2, h3 { color: #34d399; }
-        .stButton>button { background-color: #059669; color: white; border-radius: 6px; width: 100%; font-weight: bold; }
-        .inst-box { background-color: #111827; padding: 20px; border-radius: 12px; border-right: 6px solid #34d399; margin-bottom: 15px; }
-        .alert-box { background-color: #7f1d1d; padding: 18px; border-radius: 10px; border-right: 6px solid #f87171; margin-top: 10px; }
-        .success-box { background-color: #064e3b; padding: 18px; border-radius: 10px; border-right: 6px solid #34d399; margin-top: 10px; }
-        </style>""", unsafe_allow_html=True)
-else:
-    st.markdown("""<style>
-        .main { background-color: #0b0f19; color: #f1f5f9; }
-        h1, h2, h3 { color: #34d399; }
-        .stButton>button { background-color: #059669; color: white; border-radius: 6px; width: 100%; font-weight: bold; }
-        .inst-box { background-color: #111827; padding: 20px; border-radius: 12px; border-left: 6px solid #34d399; margin-bottom: 15px; }
-        .alert-box { background-color: #7f1d1d; padding: 18px; border-radius: 10px; border-left: 6px solid #f87171; margin-top: 10px; }
-        .success-box { background-color: #064e3b; padding: 18px; border-radius: 10px; border-left: 6px solid #34d399; margin-top: 10px; }
-        </style>""", unsafe_allow_html=True)
-
-# واجهة التطبيق
-st.title(t["title"])
-st.markdown(t["subtitle"])
-
-# إعدادات الحساب الجانبية
-st.sidebar.header(t["account_settings"])
-capital = st.sidebar.number_input(f'{t["capital"]} ({currency})', value=100000.0, step=1000.0)
-risk_pct = st.sidebar.slider(t["risk_pct"], min_value=0.1, max_value=2.0, value=0.5) / 100.0
-max_daily_drawdown = st.sidebar.slider(t["max_daily_loss"], min_value=1.0, max_value=5.0, value=2.0)
-
-st.markdown("---")
-
-# --- الأداة التفاعلية الكبرى: أكاديمية المحترف والمسار الفني (Pro Mastery & Technical Track) ---
-with st.expander(f"📚 {t['academy_title']} (اضغط هنا لفتح مسار التعليم الفني الكامل)", expanded=False):
-    st.markdown("""
-    <div class="inst-box">
-        <h3>المسار التوجيهي الشامل للمتداول المحترف (من الهواية إلى الاحتراف المؤسسي)</h3>
-        <p>لكي تضمن أنك لا تخسر، يجب أن تتقن 4 ركائز فنية لا غنى عنها:</p>
-        <ul>
-            <li><b>1. هيكل السوق وقانون السيولة (Market Structure):</b> لا تشتري لمجرد أن السهم نزل؛ ابحث عن كسر القمة السابقة وتغيير مسار السلم (CHoCH / BOS).</li>
-            <li><b>2. مناطق العرض والطلب المؤسسية (Order Blocks):</b> الشراء يكون حصرياً من الشموع التي سبقت الانفجار السعري الصاعد، والبيع عند مناطق الهبوط العنيف.</li>
-            <li><b>3. إدارة الحجم الجزئي (Scaling-In Strategy):</b> لا تدخل بكل الكمية دفعة واحدة. أدخل بـ 50% عند الدعم الأول، و50% عند التأكيد، لتقليل تكلفة الدخول.</li>
-            <li><b>4. الانضباط الرياضي (Mathematical Expectancy):</b> تداولك عبارة عن نظام احتمالي؛ التزم بنسبة عائد للمخاطرة تتجاوز 2:1 دائماً ودع الإحصاء يعمل لصالحك.</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("---")
-
-# --- محطة المخاطر وحسابات التذبذب ATR ---
-st.subheader(t["terminal_title"])
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    user_input_asset = st.text_input(t["asset"], value="1120" if is_saudi else "AAPL")
-    query_asset = user_input_asset.strip()
-    if is_saudi and not query_asset.endswith(".SR") and not query_asset.endswith(".sr"):
-        query_asset = query_asset + ".SR"
-
-    current_market_price = 180.0
-    comp_name = "N/A"
-    historical_data = None
-    try:
-        ticker_obj = yf.Ticker(query_asset)
-        info = ticker_obj.info
-        comp_name = info.get('longName', info.get('shortName', query_asset))
-        
-        historical_data = ticker_obj.history(period="14d")
-        if not historical_data.empty:
-            current_market_price = float(historical_data['Close'].iloc[-1])
-            st.success(f"🏢 {comp_name}\n\n💰 {t['live_price']}: {current_market_price:.2f} {currency}")
+    def get_murphy_trend_filter(hist_data, current_price: float):
+        if hist_data is None or len(hist_data) < 10:
+            return "LONG", "بيانات غير كافية لتطبيق مرجع جون ميرفي"
+        sma_10 = hist_data['Close'].rolling(window=10).mean().iloc[-1]
+        window_30 = min(30, len(hist_data))
+        sma_30 = hist_data['Close'].rolling(window=window_30).mean().iloc[-1]
+        if current_price >= sma_10 and sma_10 >= sma_30:
+            return "LONG", "اتجاه صاعد متوافق مع معايير جون ميرفي (SMA 10/30)"
+        elif current_price <= sma_10 and sma_10 <= sma_30:
+            return "SHORT", "اتجاه هابط مؤكد (معايير التحليل الفني الكلاسيكي)"
         else:
-            st.warning("⚠️ تعذر جلب السعر الحي")
+            direction = "LONG" if current_price >= sma_10 else "SHORT"
+            return direction, "منطقة تذبذب عرضي / يتطلب الحذر"
+
+    def get_buffett_fundamental_analysis(info: dict):
+        score = 0
+        notes = []
+        roe = info.get("returnOnEquity")
+        pe = info.get("trailingPE")
+        profit_margins = info.get("profitMargins")
+        
+        if roe and roe > 0.12:
+            score += 40
+            notes.append(f"العائد على حقوق المساهمين ممتاز (ROE: {roe*100:.1f}%)")
+        else:
+            notes.append("العائد على حقوق المساهمين منخفض أو غير متوفر")
+            
+        if pe and 0 < pe < 25:
+            score += 40
+            notes.append(f"مكرر الربحية معقول وجذاب استثمارياً (P/E: {pe:.1f})")
+        elif pe and pe >= 25:
+            score += 20
+            notes.append(f"السهم يتداول بتقييم مرتفع (P/E: {pe:.1f})")
+        else:
+            notes.append("بيانات مكرر الربحية غير متاحة بدقة")
+            
+        if profit_margins and profit_margins > 0.10:
+            score += 20
+            notes.append("هامش ربحية تشغيلي قوي (> 10%)")
+        else:
+            notes.append("هوامش الربحية تحتاج لمزيد من المتابعة")
+            
+        if score >= 70:
+            rating = "سهم ذو قيمة عالية (Buffett Quality Pick)"
+        elif score >= 40:
+            rating = "سهم متوسط الجودة الأساسية"
+        else:
+            rating = "لا يمرر شروط القيمة الاستثمارية الصارمة"
+            
+        return score, rating, notes
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### ⚙️ إعدادات المحفظة وإدارة المخاطر")
+    global_capital = st.sidebar.number_input("رأس المال الكلي (SAR/USD)", value=50000.0, step=1000.0)
+    max_risk_pct = st.sidebar.slider("المخاطرة المسموحة للمحفظة (%)", 0.5, 3.0, 1.0)
+    market_type = st.sidebar.selectbox("السوق المستهدف", ["السعودي (Tadawul)", "الأمريكي (US)"])
+    st.sidebar.success("المحرك يعمل بكامل القواعد الثلاثية (Tharp - Murphy - Buffett)")
+
+    st.markdown("### ⚡ المنصة الاستثمارية المزودة بالقواعد المؤسسية وثلاثية العباقرة")
+    st.caption("تدمج بين إدارة المخاطر (فان ثارث)، الزخم والاتجاه (جون ميرفي)، وفلسفة تقييم الشركات (وارن بافيت).")
+
+    col_m1, col_m2, col_m3 = st.columns([1, 1, 2])
+    with col_m1:
+        raw_ticker = st.text_input("رمز السهم", value="1120" if "السعودي" in market_type else "AAPL")
+    with col_m2:
+        selected_period = st.selectbox("الفترة الزمنية للتحليل", ["1mo", "3mo", "6mo", "1y"], index=1)
+    with col_m3:
+        trade_style = st.selectbox("نمط التداول", ["مضاربة سريعة (Day Trading)", "استثمار طويل الأجل (Buffett Style)"])
+
+    if "السعودي" in market_type and not raw_ticker.endswith(".SR"):
+        ticker = raw_ticker.strip() + ".SR"
+    else:
+        ticker = raw_ticker.strip()
+
+    current_price = 0.0
+    company_name = "جاري التحليل..."
+    auto_direction = "LONG"
+    trend_note = "تحليل الزخم"
+    info = {}
+    hist = None
+
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period=selected_period)
+        info = stock.info
+        if not hist.empty:
+            current_price = float(hist['Close'].iloc[-1])
+            auto_direction, trend_note = get_murphy_trend_filter(hist, current_price)
+                
+        company_name = info.get("longName") or info.get("shortName") or ticker
     except Exception:
-        st.warning("⚠️ استخدام السعر الافتراضي")
+        company_name = "خطأ في الرمز أو الاتصال"
+        current_price = 0.0
 
-    planned_entry = st.number_input(t["entry"], value=current_market_price)
+    buffett_score, buffett_rating, buffett_notes = get_buffett_fundamental_analysis(info)
 
-with col2:
-    # حساب تقريبي لـ ATR (مدى التذبذب لآخر 14 يوم لحماية الوقف)
-    default_atr = current_market_price * 0.02
-    if historical_data is not None and len(historical_data) >= 14:
-        high_low = historical_data['High'] - historical_data['Low']
-        default_atr = float(high_low.mean())
+    st.markdown("---")
+    st.subheader("📊 ملخص التحليل الفني والمالي للسهم")
 
-    suggested_sl = round(planned_entry - (default_atr * 1.5), 2)
-    stop_loss = st.number_input(t["sl"], value=max(suggested_sl, 0.01))
+    col_res1, col_res2 = st.columns(2)
+    with col_res1:
+        st.info(f"**الشركة:** {company_name}\n\n**رمز السهم:** `{ticker}`\n\n**السعر الحالي:** `{current_price:,.2f}`\n\n**الفترة الزمنية:** `{selected_period}`")
+    with col_res2:
+        direction_color = "🟢 صاعد" if auto_direction == "LONG" else "🔴 هابط"
+        st.success(f"**اتجاه الزخم الفني:** {direction_color}\n\n**تفاصيل التحليل:** {trend_note}\n\n**تقييم وارن بافيت:** {buffett_rating} (الدرجة: {buffett_score}/100)")
 
-with col3:
-    tp1 = st.number_input(t["tp1"], value=round(planned_entry + (abs(planned_entry - stop_loss) * 2.0), 2))
-    tp2 = st.number_input(t["tp2"], value=round(planned_entry + (abs(planned_entry - stop_loss) * 3.5), 2))
+    with st.expander("تفاصيل تقييم الأساسيات المالية (على طريقة وارن بافيت)"):
+        for note in buffett_notes:
+            st.write(f"- {note}")
 
-with col4:
-    st.markdown(t["metrics_header"])
-    risk_amount = capital * risk_pct
-    price_diff = abs(planned_entry - stop_loss)
-    
-    reward_diff1 = abs(tp1 - planned_entry)
-    reward_diff2 = abs(tp2 - planned_entry)
-    
-    rr_ratio1 = reward_diff1 / price_diff if price_diff > 0 else 0
-    rr_ratio2 = reward_diff2 / price_diff if price_diff > 0 else 0
-    position_size = int(risk_amount / price_diff) if price_diff > 0 else 0
-    
-    st.metric(label=t["rr1"], value=f"{rr_ratio1:.2f}")
-    st.metric(label=t["rr2"], value=f"{rr_ratio2:.2f}")
-    st.metric(label=t["pos_size"], value=f"{position_size}")
+    if "مضاربة" in trade_style:
+        sl_percent = 1.5
+        target_multiplier = 2.5
+        style_label = "مضاربة سريعة"
+    else:
+        sl_percent = 7.0 
+        target_multiplier = 4.0
+        style_label = "استثمار بافيتي طويل الأجل"
 
-if rr_ratio1 < 1.8:
-    st.markdown(f"<div class='alert-box'>{t['hard_stop']} (العائد أقل من 1.8)</div>", unsafe_allow_html=True)
+    if auto_direction == "LONG":
+        auto_sl = round(current_price * (1 - (sl_percent / 100)), 2)
+        risk_per_share = current_price - auto_sl
+        auto_tp = round(current_price + (risk_per_share * target_multiplier), 2)
+    else:
+        auto_sl = round(current_price * (1 + (sl_percent / 100)), 2)
+        risk_per_share = auto_sl - current_price
+        auto_tp = round(current_price - (risk_per_share * target_multiplier), 2)
+
+    st.warning(f"🎯 **خطة المحرك الذكي ({style_label}):** الاتجاه (**{auto_direction}**) | وقف الخسارة = **{auto_sl}** | الهدف المقترح = **{auto_tp}** (عائد 1:{target_multiplier})")
+
+    if st.button("🚀 اعتماد وتنفيذ الصفقة بمعايير العباقرة الثلاثة", use_container_width=True):
+        shares_count, allowed_risk_cash, total_cost = calculate_tharp_position_size(
+            global_capital, max_risk_pct, current_price, auto_sl
+        )
+        potential_profit = shares_count * abs(auto_tp - current_price)
+        
+        st.markdown("### لوحة القرار المؤسسي المعتمد")
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("الكمية المحسوبة", f"{shares_count:,} سهم")
+        m2.metric("إجمالي تكلفة الصفقة", f"{total_cost:,.2f}")
+        m3.metric("مخاطر الخسارة القصوى", f"-{allowed_risk_cash:,.2f}", delta_color="inverse")
+        m4.metric("الأرباح المستهدفة", f"+{potential_profit:,.2f}", delta="مستهدف")
+        
+        st.success("تمت العملية بنجاح باستخدام تكامل قواعد المخاطر (فان ثارث)، الاتجاهات الفنية (جون ميرفي)، وتقييم الشركات (وارن بافيت).")
+
+
+# ==========================================
+# الصفحة الثانية: الأكاديمية الذكية والموجه المؤسسي الشامل
+# ==========================================
 else:
-    st.markdown(f"<div class='success-box'>{t['approved']}</div>", unsafe_allow_html=True)
+    st.markdown("### 🎓 الأكاديمية الذكية والموجه المؤسسي الشامل")
+    st.caption("المرجع الأكاديمي الشامل المدعوم بالذكاء الاصطناعي لفهم التحليل الفني، الكمي، والمالي بعمق مؤسسي.")
 
-st.markdown("---")
-
-# --- سجل الصفقات والتدقيق النفسي المؤسسي ---
-if "journal_data" not in st.session_state:
-    st.session_state.journal_data = pd.DataFrame(columns=[
-        "Date", "Asset", "Size", "Entry", "TP1", "TP2", f'P&L ({currency})', "Psychology Status"
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "📈 المتوسطات والزخم", 
+        "🕯️ الشموع اليابانية", 
+        "📐 النماذج الفنية الكلاسيكية", 
+        "📊 التحليل الكمي والرياضي", 
+        "💰 التحليل المالي الأساسي", 
+        "🤖 مساعد الذكاء الاصطناعي الذكي"
     ])
 
-st.subheader(t["journal_title"])
-
-with st.form("trade_form"):
-    c1, c2, c3, c4 = st.columns(4)
-    t_date = c1.date_input("Date", datetime.date.today())
-    t_asset = c2.text_input("Asset", user_input_asset)
-    t_size = c3.number_input("Size", value=position_size)
-    t_entry = c4.number_input("Entry", value=planned_entry)
-    
-    c5, c6, c7, c8 = st.columns(4)
-    t_tp1 = c5.number_input("TP1", value=tp1)
-    t_tp2 = c6.number_input("TP2", value=tp2)
-    t_pnl = c7.number_input(f'P&L ({currency})', value=0.0)
-    
-    behavior = c8.selectbox("Psychology State", ["Disciplined & Patient (منضبط وصبور)", "Over-sized (حجم زائد خاطئ)", "FOMO Chasing (ملاحقة السعر بطمع)", "Revenge Trade (محاولة انتقام خاسرة)"])
-    
-    submit_btn = st.form_submit_button("Execute & Securely Log Trade")
-    if submit_btn:
-        new_row = {
-            "Date": t_date, "Asset": t_asset, "Size": t_size, "Entry": t_entry, 
-            "TP1": t_tp1, "TP2": t_tp2, f'P&L ({currency})': t_pnl, "Psychology Status": behavior
-        }
-        st.session_state.journal_data = pd.concat([st.session_state.journal_data, pd.DataFrame([new_row])], ignore_index=True)
-        st.success("Trade recorded with algorithmic protection!")
-
-if not st.session_state.journal_data.empty:
-    st.dataframe(st.session_state.journal_data, use_container_width=True)
-    
-    # لوحة التحليل الإحصائي وقاطع الأمان اليومي (Circuit Breaker)
-    total_trades = len(st.session_state.journal_data)
-    total_pnl = st.session_state.journal_data[f'P&L ({currency})'].sum()
-    winning_trades = len(st.session_state.journal_data[st.session_state.journal_data[f'P&L ({currency})'] > 0])
-    win_rate = (winning_trades / total_trades) * 100 if total_trades > 0 else 0
-    
-    # فحص قاطع الأمان (إذا بلغت الخسارة اليومية الحد الأقصى)
-    max_allowed_loss_amount = capital * (max_daily_drawdown / 100.0)
-    
-    st.markdown("### 📊 لوحة الأداء المالي وقاطع الأمان المؤسسي (Circuit Breaker)")
-    m_c1, m_c2, m_c3, m_c4 = st.columns(4)
-    m_c1.metric("إجمالي الصفقات", f"{total_trades}")
-    m_c2.metric("صافي الأرباح المحققة", f"{total_pnl:+,.2f} {currency}")
-    m_c3.metric("معدل النجاح الإحصائي", f"{win_rate:.1f}%")
-    m_c4.metric("حد الأمان المسموح (Max Loss)", f"-{max_allowed_loss_amount:,.2f} {currency}")
-    
-    if total_pnl <= -max_allowed_loss_amount:
+    with tab1:
+        st.subheader("المتوسطات المتحركة ومؤشرات الزخم المتقدمة")
         st.markdown("""
-        <div class="alert-box">
-            <h2>🚨 تم تفعيل قاطع الأمان اليومي (CIRCUIT BREAKER ACTIVATED) 🚨</h2>
-            <p>لقد تجاوزت خسائرك الحد الأقصى المسموح به لجلسة اليوم. نظماً وقانونياً للمؤسسات، تم إيقاف الصفقات الجديدة إجبارياً لحماية بقية رأس مالك. اغلق الشاشة وعد غداً بيوم جديد برأس مال محمي!</p>
-        </div>
-        """, unsafe_allow_html=True)
-elif not st.session_state.journal_data.empty == False:
-    st.info("💡 سجّل صفقاتك أعلاه لتفعيل مؤشرات الأداء وقاطع الأمان اليومي الحصري.")
+        * **المتوسط المتحرك البسيط والآسي (SMA & EMA):** يوضح الاتجاه العام ويصفي الضوضاء السعرية. المتوسطات القصيرة (10 و30) تعكس الزخم اللحظي، بينما المتوسطات الطويلة (100 و200) تحدد الاتجاه الاستثماري المسيطر.
+        * **مؤشر القوة النسبية (RSI):** يقيس سرعة التغيرات السعرية لتحديد مناطق تشبع الشراء (أ فوق 70) وتشبع البيع (تحت 30).
+        * **مؤشر الـ MACD:** يقيس تقارب وتباعد المتوسطات الأسية لتوليد إشارات دخول وخروج عند تقاطع خط الإشارة مع الهيستوجرام.
+        * **بولينجر باند (Bollinger Bands):** يقيس تقلبات السوق؛ تضيق الأشرطة ينذر بانفجار سعري قادم، واتساعها يعكس ذروة الحركة.
+        """)
+
+    with tab2:
+        st.subheader("دليل الشموع اليابانية وقراءتها النفسية")
+        st.markdown("""
+        * **المطرقة والشهاب (Hammer & Shooting Star):** شموع ذات ظلال طويلة تدل على رفض الأسعار في القيعان أو القمم وانعكاس الاتجاه المحتمل.
+        * **الابتلاع الشرائي والبيعي (Bullish & Bearish Engulfing):** شمعة كاملة تبتلع الشمعة السابقة بالكامل، مؤكدة سيطرة المشترين أو البائعين بقوة.
+        * **الجنود الثلاثة البيض والغربان السود (Three White Soldiers / Black Crows):** نماذج استمرارية أو انعكاسية قوية تتألف من ثلاث شموع متتالية باتجاه واحد.
+        * **الدوجي والقمم الدوارة (Doji & Spinning Tops):** تعكس حالة تردد وترقب بين قوى العرض والطلب.
+        """)
+
+    with tab3:
+        st.subheader("النماذج الفنية الكلاسيكية (Chart Patterns)")
+        st.markdown("""
+        * **الرأس والكتفان (Head & Shoulders):** نموذج انعكاسي كلاسيكي للقمم، حيث يتم قياس الهدف الهابط من نقطة كسر خط العنق بمسافة تساوي ارتفاع الرأس عن الخط.
+        * **القاع المزدوج والقمة المزدوجة (Double Bottom / Top):** اختبار متكرر لمستوى دعم أو مقاومة رئيسي يعقبه ارتداد حاد.
+        * **المثلثات والمتماثلة والأعلام (Triangles & Flags):** نماذج استمرارية تؤكد أن السعر في استراحة مؤقتة ضمن نفس اتجاه الترند العام.
+        * **الكوب والعروة (Cup and Handle):** من أقوى نماذج الاستمرار الصاعد في الأسهم الاستثمارية والنموية.
+        """)
+
+    with tab4:
+        st.subheader("التحليل الكمي والرياضي في التداول (Quantitative Analysis)")
+        st.markdown("""
+        * **إدارة المخاطر الرياضية (Van K. Tharp R-Multiples):** قياس العائد الفعلي مقارنة بالمخاطرة الأساسية المحددة مسبقاً (R) لتقييم كفاءة المتداول.
+        * **التحليل الإحصائي للتقلبات (Volatility & Variance):** قياس الانحراف المعياري للأسعار التاريخية لتقدير احتمالات المخاطر وتحقيق الأهداف.
+        * **العائد مقابل المخاطرة (Risk-to-Reward Ratio):** ضمان ألا تقل نسبة العائد المستهدف عن ضعف أو ثلاثة أضعاف حجم المخاطرة المقبولة.
+        """)
+
+    with tab5:
+        st.subheader("التحليل المالي الأساسي وقيمة الشركات (Warren Buffett Model)")
+        st.markdown("""
+        * **العائد على حقوق المساهمين (ROE):** مؤشر رئيسي لمدى كفاءة الإدارة في توليد الأرباح من أموال المستثمرين.
+        * **مكرر الربحية وقيمة الأصول (P/E & P/B Ratios):** تقييم ما إذا كان السهم يتداول بسعر رخيص مقارنة بأرباحه وأصوله الحقيقية.
+        * **هامش الأمان (Margin of Safety):** مبدأ بافيتي أساسي بعدم شراء أي أصل إلا إذا كان سعره السوقي أقل بكثير من قيمته الجوهرية.
+        """)
+
+    with tab6:
+        st.subheader("🤖 الموجه الذكي التفاعلي المتعمق")
+        st.markdown("اختر استفسارك أو موضوعك المفضل للحصول على شرح وتحليل فوري مدعوم بالذكاء الاصطناعي المؤسسي:")
+        
+        user_inquiry = st.selectbox(
+            "اختر موضوع الشرح والمراجعة:",
+            [
+                "اشرح لي كيفية دمج مؤشر RSI مع المتوسطات المتحركة بفعالية",
+                "ما هي الطريقة العلمية لتحديد وقف الخسارة والهدف وفق فان ثارث؟",
+                "كيف تفحص الميزة التنافسية للشركة (Economic Moat) على طريقة وارن بافيت؟",
+                "ما هي شروط نجاح النماذج الفنية الكلاسيكية وتجنب الإشارات الوهمية؟"
+            ]
+        )
+
+        if st.button("✨ توليد الشرح والتحليل الفوري", use_container_width=True):
+            if "RSI" in user_inquiry:
+                st.success("💡 **تحليل الموجه الذكي (RSI + المتوسطات):**\n\nعندما يكون السهم فوق متوسط 30 ويكون مؤشر RSI صاعداً من مناطق تشبع البيع (تحت 30)، فهذه من أقوى إشارات الدخول الآمن. تجنب البيع أو الشراء لمجرد وصول RSI لرقم 70 في الترندات القوية لأن السهم قد يظل في مناطق تشبع الشراء لفترات طويلة.")
+            elif "فان ثارث" in user_inquiry:
+                st.success("💡 **تحليل الموجه الذكي (إدارة المخاطر لـ فان ثارث):**\n\nالسر ليس في أين تشتري، بل في أين تخرج إذا كنت مخطئاً. حدد نقطة وقف الخسارة عند كسر هيكل فني معتبر (مثل دعم أو قاع)، وحدد المخاطرة بـ 1% من رأس مالك، واجعل الهدف يغطي أضعاف المخاطرة (R:R بنسبة 1:3 أو أكثر).")
+            elif "وارن بافيت" in user_inquiry:
+                st.success("💡 **تحليل الموجه الذكي (الميزة التنافسية وقيمة بافيت):**\n\nبافيت يبحث عن الشركات التي تمتلك 'خندقاً اقتصادياً' (Economic Moat) مثل العلامة التجارية القوية، الاحتكار، أو كفاءة التكلفة العالية، والتي تتيح لها تحقيق عائد على حقوق المساهمين (ROE) يفوق 15% باستمرار ودون ديون مفرطة.")
+            else:
+                st.success("💡 **تحليل الموجه الذكي (النماذج الفنية):**\n\nأهم شروط نجاح أي نموذج فني هو حدوثه بعد اتجاه واضح (ترند سابق)، وضرورة ترافقه مع تزايد ملحوظ في أحجام التداول (Volume) عند لحظة اختراق خط الرقبة أو المقاومة الرئيسية.")
