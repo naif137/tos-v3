@@ -1,6 +1,7 @@
 ﻿import streamlit as st
 import pandas as pd
 import datetime
+import yfinance as yf
 
 st.set_page_config(page_title="TOS V3 - Trading Operating System", layout="wide", page_icon="📈")
 
@@ -16,12 +17,13 @@ default_ticker = "AAPL" if "US" in market or "الأمريكي" in market else "
 # --- القاموس (عربي/إنجليزي) ---
 t = {
     "title": "🚀 TOS V3: Smart Trading Operating System" if lang == "English" else "🚀 نظام التداول الذكي TOS V3",
-    "subtitle": "Professional Trading Journal, Risk, Multi-Target & Backtesting Engine" if lang == "English" else "سجل التداول، إدارة المخاطر، الأهداف المتعددة ومحرك الباك تست",
+    "subtitle": "Professional Trading Journal, Risk & Live Market Data Engine" if lang == "English" else "سجل التداول، إدارة المخاطر وسحب بيانات الأسواق الحية",
     "account_settings": "📊 Account Settings" if lang == "English" else "📊 إعدادات الحساب",
     "capital": "Starting Capital" if lang == "English" else "رأس المال الأساسي",
     "risk_pct": "Risk Per Trade (%)" if lang == "English" else "نسبة المخاطرة لكل صفقة (%)",
-    "risk_terminal": "🎯 1. Pre-Trade Risk Terminal" if lang == "English" else "🎯 1. محطة المخاطر قبل الصفقة",
+    "risk_terminal": "🎯 1. Live Market Risk Terminal" if lang == "English" else "🎯 1. محطة المخاطر والبيانات الحية للسوق",
     "asset": "Asset / Ticker" if lang == "English" else "الرمز / السهم",
+    "live_price": "Live Market Price" if lang == "English" else "السعر الحي بالسوق",
     "entry": "Planned Entry" if lang == "English" else "سعر الدخول المستهدف",
     "sl": "Stop Loss" if lang == "English" else "وقف الخسارة",
     "tp1": "Take Profit 1 (TP1)" if lang == "English" else "هدف أول (TP1)",
@@ -71,20 +73,34 @@ st.sidebar.header(t["account_settings"])
 capital = st.sidebar.number_input(f'{t["capital"]} ({currency})', value=100000.0, step=1000.0)
 risk_pct = st.sidebar.slider(t["risk_pct"], min_value=0.1, max_value=5.0, value=0.5) / 100.0
 
-# 1. محطة المخاطر قبل الصفقة
+# 1. محطة المخاطر وجلب السعر الحي
 st.subheader(t["risk_terminal"])
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     asset = st.text_input(t["asset"], value=default_ticker)
-    planned_entry = st.number_input(t["entry"], value=180.0)
+    
+    # محاولة جلب السعر اللحظي من السوق (أمريكي أو سعودي)
+    current_market_price = 180.0
+    try:
+        ticker_obj = yf.Ticker(asset)
+        todays_data = ticker_obj.history(period="1d")
+        if not todays_data.empty:
+            current_market_price = float(todays_data['Close'].iloc[-1])
+            st.info(f"{t['live_price']}: {current_market_price:.2f} {currency}")
+        else:
+            st.warning("⚠️ تعذر جلب السعر اللحظي، يرجى التحقق من الرمز")
+    except Exception:
+        st.warning("⚠️ جاري استخدام القيمة الافتراضية")
+
+    planned_entry = st.number_input(t["entry"], value=current_market_price)
 
 with col2:
-    stop_loss = st.number_input(t["sl"], value=177.5)
+    stop_loss = st.number_input(t["sl"], value=round(current_market_price * 0.98, 2))
 
 with col3:
-    tp1 = st.number_input(t["tp1"], value=185.0)
-    tp2 = st.number_input(t["tp2"], value=190.0)
+    tp1 = st.number_input(t["tp1"], value=round(current_market_price * 1.03, 2))
+    tp2 = st.number_input(t["tp2"], value=round(current_market_price * 1.06, 2))
 
 with col4:
     st.markdown(t["risk_analysis"])
@@ -146,7 +162,7 @@ if not st.session_state.journal_data.empty:
 
 st.markdown("---")
 
-# 5. قسم التدريب والباك تست (Backtesting Simulator)
+# 5. قسم التدريب والباك تست
 st.subheader(t["backtest_title"])
 st.markdown("اختبر استراتيجيتك التاريخية عبر محاكاة عدد من الصفقات الوهمية لمعرفة نسبة النجاح (Win Rate) المتوقعة.")
 
