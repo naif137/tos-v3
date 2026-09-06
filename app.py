@@ -16,7 +16,7 @@ default_ticker = "AAPL" if "US" in market or "الأمريكي" in market else "
 # --- القاموس (عربي/إنجليزي) ---
 t = {
     "title": "🚀 TOS V3: Smart Trading Operating System" if lang == "English" else "🚀 نظام التداول الذكي TOS V3",
-    "subtitle": "Professional Trading Journal, Risk & Multi-Target Engine" if lang == "English" else "سجل التداول الاحترافي، إدارة المخاطر والأهداف المتعددة",
+    "subtitle": "Professional Trading Journal, Risk, Multi-Target & Backtesting Engine" if lang == "English" else "سجل التداول، إدارة المخاطر، الأهداف المتعددة ومحرك الباك تست",
     "account_settings": "📊 Account Settings" if lang == "English" else "📊 إعدادات الحساب",
     "capital": "Starting Capital" if lang == "English" else "رأس المال الأساسي",
     "risk_pct": "Risk Per Trade (%)" if lang == "English" else "نسبة المخاطرة لكل صفقة (%)",
@@ -34,6 +34,7 @@ t = {
     "approved": "🟢 APPROVED: Trade meets risk parameters!" if lang == "English" else "🟢 مسموح: الصفقة تتوافق مع معايير المخاطرة!",
     "journal_title": "📓 2 & 3. Active Trades & Multi-Target Journal" if lang == "English" else "📓 2 & 3. الصفقات النشطة وسجل الأهداف المتعددة",
     "behavior_title": "🧠 4. Behavioral & Psychology Engine" if lang == "English" else "🧠 4. محرك الانضباط والسلوكيات النفسية",
+    "backtest_title": "🧪 5. Backtesting & Training Simulator" if lang == "English" else "🧪 5. محاكي التدريب والاختبار العكسي (Backtest)",
     "date": "Date" if lang == "English" else "التاريخ",
     "actual_size": "Actual Size" if lang == "English" else "الكمية الفعلية",
     "actual_entry": "Actual Entry" if lang == "English" else "سعر الدخول الفعلي",
@@ -43,8 +44,7 @@ t = {
     "disciplined": "Disciplined (منضبط)" if lang == "English" else "منضبط (Disciplined)",
     "oversized": "Over-sized (حجم زائد)" if lang == "English" else "كمية زائدة (Over-sized)",
     "fomo": "FOMO / Chasing (ملاحقة السعر)" if lang == "English" else "ملاحقة السعر / FOMO",
-    "revenge": "Revenge Trading (انتقام من السوق)" if lang == "English" else "انتقام من السوق (Revenge)",
-    "status": "Behavior Status" if lang == "English" else "الحالة السلوكية"
+    "revenge": "Revenge Trading (انتقام من السوق)" if lang == "English" else "انتقام من السوق (Revenge)"
 }
 
 # --- تنسيق التصميم واتجاه الشاشة ---
@@ -66,12 +66,12 @@ else:
 st.title(t["title"])
 st.markdown(t["subtitle"])
 
-# 1. إعدادات الحساب
+# الإعدادات الجانبية للحساب
 st.sidebar.header(t["account_settings"])
 capital = st.sidebar.number_input(f'{t["capital"]} ({currency})', value=100000.0, step=1000.0)
 risk_pct = st.sidebar.slider(t["risk_pct"], min_value=0.1, max_value=5.0, value=0.5) / 100.0
 
-# 2. محطة المخاطر قبل الصفقة (القسم الأول والثالث)
+# 1. محطة المخاطر قبل الصفقة
 st.subheader(t["risk_terminal"])
 col1, col2, col3, col4 = st.columns(4)
 
@@ -109,7 +109,7 @@ else:
 
 st.markdown("---")
 
-# تهيئة جدول الصفقات والسلوكيات (القسم الثاني والرابع)
+# 2 & 3 & 4. الصفقات النشطة وسجل الأهداف والسلوكيات
 if "journal_data" not in st.session_state:
     st.session_state.journal_data = pd.DataFrame(columns=[
         "Date", "Asset", "Size", "Entry", "TP1", "TP2", f'P&L ({currency})', "Psychology Status"
@@ -129,7 +129,6 @@ with st.form("trade_form"):
     t_tp2 = c6.number_input(t["tp2"], value=tp2)
     t_pnl = c7.number_input(f'{t["pnl"]} ({currency})', value=0.0)
     
-    # القسم الرابع: محرك الانضباط النفسي والسلوكي
     st.markdown(t["behavior_title"])
     behavior = st.selectbox("Select State / اختر الحالة النفسية", [t["disciplined"], t["oversized"], t["fomo"], t["revenge"]])
     
@@ -144,3 +143,29 @@ with st.form("trade_form"):
 
 if not st.session_state.journal_data.empty:
     st.dataframe(st.session_state.journal_data, use_container_width=True)
+
+st.markdown("---")
+
+# 5. قسم التدريب والباك تست (Backtesting Simulator)
+st.subheader(t["backtest_title"])
+st.markdown("اختبر استراتيجيتك التاريخية عبر محاكاة عدد من الصفقات الوهمية لمعرفة نسبة النجاح (Win Rate) المتوقعة.")
+
+bt_col1, bt_col2, bt_col3 = st.columns(3)
+with bt_col1:
+    bt_trades = st.number_input("عدد الصفقات التجريبية (Total Trades)", value=20, min_value=1)
+with bt_col2:
+    bt_winrate = st.slider("نسبة نجاح الاستراتيجية المتوقعة (%)", min_value=10.0, max_value=90.0, value=50.0) / 100.0
+with bt_col3:
+    bt_avg_rr = st.number_input("متوسط العائد للمخاطرة (Average R:R)", value=2.0, min_value=0.5)
+
+if st.button("تشغيل محاكاة الباك تست | Run Backtest Simulation"):
+    wins = int(bt_trades * bt_winrate)
+    losses = bt_trades - wins
+    total_return_units = (wins * bt_avg_rr) - losses
+    
+    st.success(f"نتائج محاكاة الباك تست لـ {bt_trades} صفقة:")
+    res_c1, res_c2, res_c3 = st.columns(3)
+    res_c1.metric("الصفقات الرابحة / الخاسرة", f"{wins} Win / {losses} Loss")
+    res_c2.metric("محصلة العائد بالوحدات (R)", f"{total_return_units:+.2f} R")
+    expectancy = (bt_winrate * bt_avg_rr) - (1 - bt_winrate)
+    res_c3.metric("معامل التوقع الإحصائي (Expectancy)", f"{expectancy:+.2f} R per trade")
